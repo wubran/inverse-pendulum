@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html style="padding:0;margin:0;">
+	<body style="padding:0;margin:0;overflow: hidden;">
+		<canvas id="screen"></canvas>
+		<script>
+			canvascolor = "rgba(19, 23, 26, 1)";
+			var canvas = document.getElementById('screen');
+			var ctx = canvas.getContext('2d');
+
+
+			var click = false
+			var mouseX = 0;
+			var mouseY = 0;
+			var mousemode = 0;
+			var pause = false;
+			var righting = false;
+			var lefting = false;
+
+			canvasResize();
+
+
+			canvas.addEventListener('mousedown', onClick);
+			canvas.addEventListener("mouseup", onRelease);
+			canvas.addEventListener('mouseleave', onMouseLeave);
+			canvas.addEventListener('mousemove', onMouseMove);
+			document.addEventListener('keydown', (event) => {
+			  const keyName = event.key;
+				switch(keyName){
+					case 'Control':
+						return;
+					case 'Escape':
+
+						return;
+					case ' ':
+						pause = !pause;
+						return;
+					case 'ArrowRight':
+						righting = true;
+						return;
+					case 'ArrowLeft':
+						lefting = true;
+						return;
+				}
+			}, false);
+			
+			document.addEventListener('keyup', (event) => {
+			  const keyName = event.key;
+				switch(keyName){
+					case 'Control':
+						return;
+					case 'ArrowRight':
+						righting = false;
+						return;
+					case 'ArrowLeft':
+						lefting = false;
+						return;
+				}
+			}, false);
+
+			function onClick(event){
+				click = true;
+			}
+
+			function onRelease(event){
+				click = false;
+			}
+
+			function onMouseMove(event){
+			  mouseX = event.pageX;
+			  mouseY = event.pageY;
+			}
+
+			function onMouseLeave(event){
+				click = false;
+			}
+
+			var start = Date.now();
+
+			function fillscreen(){
+				ctx.fillStyle = canvascolor;
+				ctx.fillRect(0, 0, canvas.width, canvas.height);
+				ctx.fillStyle = "lightGray";
+				ctx.fillRect(baseX - 3, canvas.height/2 - 2, 6, 4);
+
+				ctx.beginPath();
+				ctx.moveTo(0,canvas.height/2);
+				ctx.strokeStyle = "gray";
+				ctx.lineTo(canvas.width,canvas.height/2+4);
+				ctx.stroke();
+
+				ctx.textAlign = "right"
+				ctx.font = canvas.width / 30 + "px Arial";
+				ctx.fillStyle = "lightGray";
+				let time = "0";
+				if(Math.abs(theta) < Math.PI/2){
+					let temp = Math.round((Date.now() - start)/100)/10;
+					time = temp;
+					if(temp == Math.round(temp)){
+						time += ".0";
+					}
+				}
+      			ctx.fillText(time, 39*canvas.width/40, canvas.height/10);
+				ctx.font = canvas.width / 60 + "px Arial";
+				ctx.fillText("time above line^", 39*canvas.width/40, canvas.height/7);
+				ctx.fillText("use arrow keys", 39*canvas.width/40, canvas.height/5);
+
+			}
+			// setInterval(function(){
+			// }, 20);
+			var plength = 150;
+			var pmass = 10;
+			var basemass = 10;
+			var g = 0.2;
+			var theta = (Math.random()-0.5)/10; // 0 is up
+			var vtheta = 0;
+			var baseX = canvas.width/2;
+			var baseV = 0;
+			var airConst = 0.0001;
+			var trackConst = 0.01;
+			var arrowForce = 0;
+			
+
+			function draw(){
+				fillscreen();
+				let x = -plength * Math.sin(theta) + baseX;
+				let y = -plength * Math.cos(theta) + canvas.height/2;
+				ctx.strokeStyle = "gray";
+				ctx.lineWidth = 2;
+				ctx.beginPath();
+				ctx.moveTo(baseX, canvas.height/2); 
+				ctx.lineTo(x, y);
+				ctx.stroke();
+				
+				ctx.fillStyle = "white";
+				ctx.beginPath();
+				ctx.arc(x, y, 3, 0, 2*Math.PI);
+				ctx.fill();
+			}
+			function calc(){
+				baseV -= Math.abs(baseV) * baseV * trackConst;
+				if(arrowForce < 15){
+					if(righting){
+						// if(arrowForce == 0){
+						// 	arrowForce = 3
+						// }else{
+							arrowForce += 0.5;
+						// }
+					}
+					if(lefting){
+						// if(arrowForce == 0){
+						// 	arrowForce = -3
+						// }else{
+							arrowForce -= 0.5;
+						// }					
+					}
+				}
+				if(righting && lefting || !(righting || lefting)){
+					arrowForce = 0;
+				}
+				baseV += arrowForce/basemass;
+				baseX += baseV;
+
+				let x = -plength * Math.sin(theta);
+				let y = -plength * Math.cos(theta);
+				// angular accel = alpha = dx * (m * g) / (m * r^2)
+				vtheta -= x * g / (plength*plength);
+
+				vtheta -= y * arrowForce / (pmass*plength*plength);
+				
+				vtheta -= airConst * plength * Math.abs(vtheta)*vtheta*pmass; 
+				theta += vtheta;
+				
+				if(theta > Math.PI){
+					theta -= 2*Math.PI
+				} else if(theta < -Math.PI){
+					theta += 2*Math.PI
+				}
+				if(Math.abs(theta) >= Math.PI/2){
+					start = Date.now();
+				}
+			}
+			function loop(timestamp){
+				calc();
+				draw();
+				requestAnimationFrame(loop);
+			}
+
+			requestAnimationFrame(loop)
+
+			window.onresize = canvasResize;
+			function canvasResize() {
+			  canvas.width  = window.innerWidth;
+			  canvas.height = window.innerHeight;
+			  ctx.fillStyle = '#13171A';
+			  //ctx.fillStyle = canvascolor;
+			  ctx.fillRect(0, 0, canvas.width, canvas.height);
+			}
+
+		</script>
+	</body>
+</html>
